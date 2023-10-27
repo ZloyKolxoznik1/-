@@ -1,0 +1,172 @@
+from random import randint
+table = [[0 for x in range(6)] for y in range(6)]
+ships = [3, 2, 2, 1, 1, 1, 1]
+
+
+def matrix(table):
+    for x in range(6):
+        for y in range(6):
+            print(table[x][y], end=' ')
+        print()
+
+
+class Dot():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+
+class Ship():
+    def __init__(self, long, nouse, napravlenie, hp):
+        self.long = long
+        self.nouse = nouse
+        self.napravlenie = napravlenie
+        self.hp = hp
+
+    def dots(self):
+        return self.hp
+
+
+class Board(Dot, Ship):
+    table = [[0 for x in range(6)] for y in range(6)]
+    hid = None
+    global ships
+
+    @staticmethod
+    def add_ship():
+        try:
+            x = randint(0, 5)
+            y = randint(0, 5)
+            napravlenie = randint(0, 1)
+            if napravlenie == 1:
+                for x in range(x, x + ships[0]):
+                    if table[x][y] == '■':
+                        return True
+                    elif y == 5 and table[x][4] == '■':
+                        return True
+                    elif y == 0 and table[x][1] == '■':
+                        return True
+                    else:
+                        if table[x][y - 1] or table[x][y + 1] == '■':
+                            return True
+                    if x == 0 and table[1][y] == '■':
+                        return True
+                    elif x == 5 and table[4][y] == '■':
+                        return True
+                    else:
+                        if table[x + 1][y] == '■' or table[x - 1][y] == '■':
+                            return True
+                x = x - ships[0] + 1
+                for x in range(x, x + ships[0]):
+                    table[x][y] = '■'
+            elif napravlenie == 0:
+                for y in range(y, y + ships[0]):
+                    if table[x][y] == '■':
+                        return True
+                    elif x == 5 and table[4][y] == '■':
+                        return True
+                    elif x == 0 and table[1][y] == '■':
+                        return True
+                    else:
+                        if table[x - 1][y] == '■' or table[x + 1][y] == '■':
+                            return True
+                    if y == 5 and table[x][4] == '■':
+                        return True
+                    elif y == 0 and table[x][1] == '■':
+                        return True
+                    else:
+                        if table[x][y - 1] or table[x][y - 1] == '■':
+                            return True
+                y = y - ships[0] + 1
+                for y in range(y, y + ships[0]):
+                    table[x][y] = '■'
+        except IndexError:
+            print()
+        else:
+            ships.pop(0)
+
+    @staticmethod
+    def counter():
+        pass
+
+    @staticmethod
+    def viev():
+        hid = bool(input('Введите символ если хотите видеть поле соперника, если нет, то просто нажмите Enter: '))
+        if hid == True:
+            print(AI.add_ship())
+
+    def out(self):
+        return True if 0 > self.x > 6 or 0 > self.y > 6 else False
+
+    @staticmethod
+    def Shot():
+        try:
+            x = int(input('Введите координату строки: ')) - 1
+            y = int(input('Введите координату строки: ')) - 1
+            table[x][y] = 'X' if table[x][y] == '■' else 'T'
+        except IndexError:
+            print('Вы выстрелили за пределы поля')
+
+
+class Player(Board):
+    igrok = Board.add_ship()
+    computer = Board.add_ship()
+
+    @staticmethod
+    def ask():
+        pass
+
+    @staticmethod
+    def move():
+        Player.ask()
+        Board.Shot()
+
+
+class User(Player):
+    @staticmethod
+    def ask():
+        x = int(input('Выберите строку: ')) - 1
+        y = int(input('Выберите столбец: ')) - 1
+
+
+class AI(Player):
+    @staticmethod
+    def ask():
+        x = randint(0, 5)
+        y = randint(0, 5)
+
+
+class Game():
+    User.ask()
+    User.add_ship()
+    AI.ask()
+    AI.add_ship()
+
+    @staticmethod
+    def random_board():
+        while True:
+            Board.add_ship()
+            if len(ships) == 0:
+                break
+
+    @staticmethod
+    def great():
+        print('Добро пожаловать в игру "Морской Бой!". Чтобы сделать выстрел, вы должны ввести координату поля, сначала по строке(от 1 до 6 включительно), а потом по столбцу(от 1 до 6 включительно). Приятной игры!')
+
+    @staticmethod
+    def loop():
+        while '■' in table:
+            Player.move()
+
+    @staticmethod
+    def start():
+        Game.great()
+        Game.loop()
+
+
+Game.start()
+Game.random_board()
+matrix(table)
+Board.viev()
+
+
