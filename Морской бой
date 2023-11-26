@@ -1,172 +1,188 @@
 from random import randint
-table = [[0 for x in range(6)] for y in range(6)]
-ships = [3, 2, 2, 1, 1, 1, 1]
+class BoardOutException:
+    def __str__(self):
+        return 'Стреляете не туда!'
 
 
-def matrix(table):
-    for x in range(6):
-        for y in range(6):
-            print(table[x][y], end=' ')
-        print()
+class BoardUsedException:
+    def __str__(self):
+        return 'Корабль расположен неверно, переставьте'
 
 
-class Dot():
+class Dot:
     def __init__(self, x, y):
         self.x = x
         self.y = y
 
+    def __eq__(self, other):
+        return self.x == other.x, self.y == other.y
 
-class Ship():
-    def __init__(self, long, nouse, napravlenie, hp):
+
+class Ship:
+    def __init__(self, long, nose: Dot, napravlenie):
         self.long = long
-        self.nouse = nouse
+        self.nose = nose
         self.napravlenie = napravlenie
-        self.hp = hp
+        self.hp = long
 
+    @property
     def dots(self):
-        return self.hp
+        dots_list = []
+        for i in range(self.long):
+            if self.napravlenie == 'В':
+                x = self.nose.x + i
+                y = self.nose.y
+            else:
+                x = self.nose.x
+                y = self.nose.y + i
+            dots_list.append(Dot(x, y))
+        return dots_list
+
+    def shooten(self, shot):
+        return shot in self.dots
 
 
-class Board(Dot, Ship):
-    table = [[0 for x in range(6)] for y in range(6)]
-    hid = None
-    global ships
+class Board:
+    def __init__(self):
+        self.table = [['0' for _ in range(6)] for _ in range(6)]
+        self.ship_types = []
+        self.hid = False
+        self.life_ship = 7
+        self.counter_list = []
 
-    @staticmethod
-    def add_ship():
+    def __str__(self):
+        res = ""
+        res += "   | 1 | 2 | 3 | 4 | 5 | 6 |"
+        for i, row in enumerate(self.table):
+            res += f"\n{i + 1}  | " + " | ".join(row) + " |"
+        return res
+
+    def add_ship(self, ship):
         try:
-            x = randint(0, 5)
-            y = randint(0, 5)
-            napravlenie = randint(0, 1)
-            if napravlenie == 1:
-                for x in range(x, x + ships[0]):
-                    if table[x][y] == '■':
-                        return True
-                    elif y == 5 and table[x][4] == '■':
-                        return True
-                    elif y == 0 and table[x][1] == '■':
-                        return True
-                    else:
-                        if table[x][y - 1] or table[x][y + 1] == '■':
-                            return True
-                    if x == 0 and table[1][y] == '■':
-                        return True
-                    elif x == 5 and table[4][y] == '■':
-                        return True
-                    else:
-                        if table[x + 1][y] == '■' or table[x - 1][y] == '■':
-                            return True
-                x = x - ships[0] + 1
-                for x in range(x, x + ships[0]):
-                    table[x][y] = '■'
-            elif napravlenie == 0:
-                for y in range(y, y + ships[0]):
-                    if table[x][y] == '■':
-                        return True
-                    elif x == 5 and table[4][y] == '■':
-                        return True
-                    elif x == 0 and table[1][y] == '■':
-                        return True
-                    else:
-                        if table[x - 1][y] == '■' or table[x + 1][y] == '■':
-                            return True
-                    if y == 5 and table[x][4] == '■':
-                        return True
-                    elif y == 0 and table[x][1] == '■':
-                        return True
-                    else:
-                        if table[x][y - 1] or table[x][y - 1] == '■':
-                            return True
-                y = y - ships[0] + 1
-                for y in range(y, y + ships[0]):
-                    table[x][y] = '■'
+            for d in ship.dots:
+                if self.out(d) or d in self.counter_list:
+                    raise BoardUsedException
+            for d in ship.dots:
+                self.table[d.x][d.y] = '■'
+        except ValueError:
+            print('Вы ввели не целочисленное значение')
         except IndexError:
-            print()
+            print('Ваш корабль оказался за пределами поля, переставьте его')
+
+    def countor(self, ship):
+        conter = [(-1, -1), (-1, 0), (-1, 1),
+                  (0, -1),   (0, 0),  (0, 1),
+                  (1, -1),   (1, 0),  (1, 1)]
+        for d in ship.dots:
+            for dx, dy in conter:
+                cntr = Dot(d.x + dx, d.y + dy)
+                if self.hid:
+                    self.table[cntr.x][cntr.y] = '.'
+                self.counter_list.append(cntr)
+
+    def out(self, d):
+        if d.x or d.y > 5 or d.x or d.y < 0:
+            return True
         else:
-            ships.pop(0)
+            return False
 
-    @staticmethod
-    def counter():
+    def shot(self, d):
+        if self.out(d):
+            raise BoardOutException
+
+        for ship in self.ship_types:
+            if ship.shooten(d):
+                ship.hp -= 1
+                self.table[d.x][d.y] = 'X'
+
+                if ship.hp == 0:
+                    self.countor(ship)
+                    print('Корабль уничтожен!')
+                    return False
+                else:
+                    print('Корабль поврежден!')
+                    return True
+
+        self.table[d.x][d.y] = '*'
+        print('Промазали...')
+        return False
+
+
+class Player:
+    def __init__(self, board, board_vrag):
+        self.board = board
+        self.board_vrag = board_vrag
+
+    def ask(self):
         pass
 
-    @staticmethod
-    def viev():
-        hid = bool(input('Введите символ если хотите видеть поле соперника, если нет, то просто нажмите Enter: '))
-        if hid == True:
-            print(AI.add_ship())
-
-    def out(self):
-        return True if 0 > self.x > 6 or 0 > self.y > 6 else False
-
-    @staticmethod
-    def Shot():
-        try:
-            x = int(input('Введите координату строки: ')) - 1
-            y = int(input('Введите координату строки: ')) - 1
-            table[x][y] = 'X' if table[x][y] == '■' else 'T'
-        except IndexError:
-            print('Вы выстрелили за пределы поля')
-
-
-class Player(Board):
-    igrok = Board.add_ship()
-    computer = Board.add_ship()
-
-    @staticmethod
-    def ask():
-        pass
-
-    @staticmethod
-    def move():
-        Player.ask()
-        Board.Shot()
-
-
-class User(Player):
-    @staticmethod
-    def ask():
-        x = int(input('Выберите строку: ')) - 1
-        y = int(input('Выберите столбец: ')) - 1
+    def move(self):
+        while True:
+            try:
+                coords = self.ask()
+                target = self.board_vrag.shot(coords)
+                return target
+            except BoardOutException:
+                print()
 
 
 class AI(Player):
-    @staticmethod
-    def ask():
-        x = randint(0, 5)
-        y = randint(0, 5)
+    def ask(self):
+        d = Dot(randint(0, 5), randint(0, 5))
+        return d
 
 
-class Game():
-    User.ask()
-    User.add_ship()
-    AI.ask()
-    AI.add_ship()
-
-    @staticmethod
-    def random_board():
+class User(Player):
+    def ask(self):
         while True:
-            Board.add_ship()
-            if len(ships) == 0:
-                break
+            coords_shot = input('Введите координаты выстрела').split()
 
-    @staticmethod
-    def great():
-        print('Добро пожаловать в игру "Морской Бой!". Чтобы сделать выстрел, вы должны ввести координату поля, сначала по строке(от 1 до 6 включительно), а потом по столбцу(от 1 до 6 включительно). Приятной игры!')
+            if len(coords_shot) != 2:
+                print('Введите 2 координаты')
+                continue
 
-    @staticmethod
-    def loop():
-        while '■' in table:
-            Player.move()
+            x, y = coords_shot
 
-    @staticmethod
-    def start():
-        Game.great()
-        Game.loop()
+            if not (x.isdigit()) or (y.isdigit()):
+                print('Введите числа')
+                continue
+
+            x, y = int(x), int(y)
+
+            return Dot(x - 1, y - 1)
 
 
-Game.start()
-Game.random_board()
-matrix(table)
-Board.viev()
+class Game:
+    def __init__(self):
+        pass
 
+    def random_board(self):
+        board = Board()
+        l = [3, 2, 2, 1, 1, 1, 1]
+        while len(l) > 0:
+            print()
+            print(board)
+            ship = Ship(l[0], Dot(int(input()) - 1, int(input()) - 1), input())
+            board.add_ship(ship)
+            board.countor(ship)
+            l.pop(0)
+            print(board)
+
+
+
+
+g = Game()
+g.random_board()
+
+
+
+#ship = Ship(2, Dot(3, 3), 'Г')
+#ship2 = Ship(1, Dot(1, 1), 'Г')
+#board.add_ship(ship)
+#board.counter(ship)
+#board.add_ship(ship2)
+
+#print(ship.dots)
+#print(ship2.dots)
+#print(board)
 
