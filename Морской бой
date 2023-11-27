@@ -1,10 +1,12 @@
 from random import randint
-class BoardOutException:
+
+
+class BoardOutException(Exception):
     def __str__(self):
         return 'Стреляете не туда!'
 
 
-class BoardUsedException:
+class BoardUsedException(Exception):
     def __str__(self):
         return 'Корабль расположен неверно, переставьте'
 
@@ -16,6 +18,9 @@ class Dot:
 
     def __eq__(self, other):
         return self.x == other.x, self.y == other.y
+
+    def __repr__(self):
+        return f"Dot({self.x}, {self.y})"
 
 
 class Ship:
@@ -47,7 +52,6 @@ class Board:
         self.table = [['0' for _ in range(6)] for _ in range(6)]
         self.ship_types = []
         self.hid = False
-        self.life_ship = 7
         self.counter_list = []
 
     def __str__(self):
@@ -58,33 +62,27 @@ class Board:
         return res
 
     def add_ship(self, ship):
-        try:
-            for d in ship.dots:
-                if self.out(d) or d in self.counter_list:
-                    raise BoardUsedException
-            for d in ship.dots:
-                self.table[d.x][d.y] = '■'
-        except ValueError:
-            print('Вы ввели не целочисленное значение')
-        except IndexError:
-            print('Ваш корабль оказался за пределами поля, переставьте его')
+        for d in ship.dots:
+            if self.out(d) or d in self.counter_list:
+                raise BoardUsedException
+        for d in ship.dots:
+            self.table[d.x][d.y] = '■'
+        self.countor(ship)
 
     def countor(self, ship):
-        conter = [(-1, -1), (-1, 0), (-1, 1),
+        contor = [(-1, -1), (-1, 0), (-1, 1),
                   (0, -1),   (0, 0),  (0, 1),
                   (1, -1),   (1, 0),  (1, 1)]
         for d in ship.dots:
-            for dx, dy in conter:
+            for dx, dy in contor:
                 cntr = Dot(d.x + dx, d.y + dy)
-                if self.hid:
-                    self.table[cntr.x][cntr.y] = '.'
-                self.counter_list.append(cntr)
+                if not self.out(cntr) and cntr not in self.counter_list:
+                    if self.hid:
+                        self.table[cntr.x][cntr.y] = '.'
+                    self.counter_list.append(cntr)
 
     def out(self, d):
-        if d.x or d.y > 5 or d.x or d.y < 0:
-            return True
-        else:
-            return False
+        return not ((0 <= d.x < 6) and (0 <= d.y < 6))
 
     def shot(self, d):
         if self.out(d):
@@ -159,30 +157,32 @@ class Game:
     def random_board(self):
         board = Board()
         l = [3, 2, 2, 1, 1, 1, 1]
-        while len(l) > 0:
-            print()
-            print(board)
-            ship = Ship(l[0], Dot(int(input()) - 1, int(input()) - 1), input())
-            board.add_ship(ship)
-            board.countor(ship)
-            l.pop(0)
-            print(board)
+        for i in l:
+            try:
+                print(board)
+                ship = Ship(i, Dot(int(input()) - 1, int(input()) - 1), input())
+                board.add_ship(ship)
 
-
+            except ValueError:
+                print('Введите корректное значение')
+        print(board)
 
 
 g = Game()
-g.random_board()
+#g.random_board()
 
 
+board = Board()
 
-#ship = Ship(2, Dot(3, 3), 'Г')
-#ship2 = Ship(1, Dot(1, 1), 'Г')
+ship = Ship(2, Dot(1, 3), 'В')
+ship2 = Ship(3, Dot(1, 1), 'В')
+
+
+print(ship.dots)
+board.countor(ship)
+print(board.counter_list)
 #board.add_ship(ship)
-#board.counter(ship)
-#board.add_ship(ship2)
-
-#print(ship.dots)
 #print(ship2.dots)
-#print(board)
-
+#board.countor(ship2)
+#print(board.counter_list)
+print(board)
