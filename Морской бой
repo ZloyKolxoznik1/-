@@ -17,7 +17,7 @@ class Dot:
         self.y = y
 
     def __eq__(self, other):
-        return self.x == other.x, self.y == other.y
+        return self.x == other.x and self.y == other.y
 
     def __repr__(self):
         return f"Dot({self.x}, {self.y})"
@@ -34,7 +34,7 @@ class Ship:
     def dots(self):
         dots_list = []
         for i in range(self.long):
-            if self.napravlenie == 'В':
+            if self.napravlenie == 1:
                 x = self.nose.x + i
                 y = self.nose.y
             else:
@@ -59,14 +59,20 @@ class Board:
         res += "   | 1 | 2 | 3 | 4 | 5 | 6 |"
         for i, row in enumerate(self.table):
             res += f"\n{i + 1}  | " + " | ".join(row) + " |"
+
+        if self.hid:
+            res = res.replace('■', '0')
         return res
 
     def add_ship(self, ship):
         for d in ship.dots:
             if self.out(d) or d in self.counter_list:
                 raise BoardUsedException
+
         for d in ship.dots:
             self.table[d.x][d.y] = '■'
+
+        self.ship_types.append(ship)
         self.countor(ship)
 
     def countor(self, ship):
@@ -105,6 +111,9 @@ class Board:
         print('Промазали...')
         return False
 
+    def povtor(self):
+        self.counter_list = []
+
 
 class Player:
     def __init__(self, board, board_vrag):
@@ -121,7 +130,7 @@ class Player:
                 target = self.board_vrag.shot(coords)
                 return target
             except BoardOutException:
-                print()
+                print('Выстрел произошел за пределы поля..')
 
 
 class AI(Player):
@@ -133,7 +142,7 @@ class AI(Player):
 class User(Player):
     def ask(self):
         while True:
-            coords_shot = input('Введите координаты выстрела').split()
+            coords_shot = input('Введите координаты выстрела: ').split()
 
             if len(coords_shot) != 2:
                 print('Введите 2 координаты')
@@ -141,7 +150,7 @@ class User(Player):
 
             x, y = coords_shot
 
-            if not (x.isdigit()) or (y.isdigit()):
+            if not (x.isdigit()) or not (y.isdigit()):
                 print('Введите числа')
                 continue
 
@@ -152,37 +161,68 @@ class User(Player):
 
 class Game:
     def __init__(self):
-        pass
+        UserBoard = self.random_board()
+        AIBoard = self.random_board()
+        self.User = User(UserBoard, AIBoard)
+        self.AI = AI(AIBoard, UserBoard)
+        AIBoard.hid = True
 
     def random_board(self):
         board = Board()
         l = [3, 2, 2, 1, 1, 1, 1]
+        num = 0
         for i in l:
-            try:
-                print(board)
-                ship = Ship(i, Dot(int(input()) - 1, int(input()) - 1), input())
-                board.add_ship(ship)
-
-            except ValueError:
-                print('Введите корректное значение')
+            while True:
+                num += 1
+                if num > 20000:
+                    num = 0
+                    board.povtor()
+                ship = Ship(i, Dot(randint(0, 5), randint(0, 5)), randint(0, 1))
+                try:
+                    board.add_ship(ship)
+                    break
+                except BoardUsedException:
+                    pass
         print(board)
+        return board
+
+    def great(self):
+        print('       Здравствуй игрок!')
+        print('     Это игра морской бой!')
+        print('Чтобы сделать выстрел введи 2 значения')
+        print('        Вот так: 1 2')
+        print()
+        print('         Приятной игры!')
+        print()
+        print()
+
+    def loop(self):
+        while True:
+            print('Доска Игрока!')
+            print(self.User.board)
+            print()
+            print('Доска Компьютера')
+            print(self.AI.board)
+            num = 1
+            if num % 2:
+                self.User.move()
+            else:
+                self.AI.move()
+
+            if len(self.User.board.ship_types) == 0:
+                print('Победу одержал Компьютер!')
+                break
+
+            if len(self.AI.board.ship_types) == 0:
+                print('Победу одержал Компьютер!')
+                break
+
+            num += 1
+
+    def start(self):
+        self.great()
+        self.loop()
 
 
 g = Game()
-#g.random_board()
-
-
-board = Board()
-
-ship = Ship(2, Dot(1, 3), 'В')
-ship2 = Ship(3, Dot(1, 1), 'В')
-
-
-print(ship.dots)
-board.countor(ship)
-print(board.counter_list)
-#board.add_ship(ship)
-#print(ship2.dots)
-#board.countor(ship2)
-#print(board.counter_list)
-print(board)
+g.start()
