@@ -1,14 +1,23 @@
 from random import randint
 
 
-class BoardOutException(Exception):
+class BoardException(Exception):
+    pass
+
+
+class BoardOutException(BoardException):
     def __str__(self):
-        return 'Стреляете не туда!'
+        return 'Стреляете за пределы поля!!!!'
 
 
-class BoardUsedException(Exception):
+class BoardUsedException(BoardException):
     def __str__(self):
         return 'Корабль расположен неверно, переставьте'
+
+
+class BoardUsed(BoardException):
+    def __str__(self):
+        return 'Вы уже сюда стреляли'
 
 
 class Dot:
@@ -76,7 +85,7 @@ class Board:
         self.ship_types.append(ship)
         self.countor(ship)
 
-    def countor(self, ship):
+    def countor(self, ship, hid=False):
         contor = [(-1, -1), (-1, 0), (-1, 1),
                   (0, -1),   (0, 0),  (0, 1),
                   (1, -1),   (1, 0),  (1, 1)]
@@ -84,7 +93,7 @@ class Board:
             for dx, dy in contor:
                 cntr = Dot(d.x + dx, d.y + dy)
                 if not self.out(cntr) and cntr not in self.counter_list:
-                    if self.hid:
+                    if hid:
                         self.table[cntr.x][cntr.y] = '.'
                     self.counter_list.append(cntr)
 
@@ -93,7 +102,12 @@ class Board:
 
     def shot(self, d):
         if self.out(d):
-            raise BoardOutException
+            raise BoardOutException()
+
+        if d in self.counter_list:
+            raise BoardUsed
+
+        self.counter_list.append(d)
 
         for ship in self.ship_types:
             if ship.shooten(d):
@@ -101,7 +115,8 @@ class Board:
                 self.table[d.x][d.y] = 'X'
 
                 if ship.hp == 0:
-                    self.countor(ship)
+                    self.countor(ship, hid=True)
+                    self.table[d.x][d.y] = 'X'
                     print('Корабль уничтожен!')
                     self.dead += 1
                     return False
@@ -131,8 +146,8 @@ class Player:
                 coords = self.ask()
                 target = self.board_vrag.shot(coords)
                 return target
-            except BoardOutException:
-                print('Выстрел произошел за пределы поля..')
+            except BoardException as e:
+                print(e)
 
 
 class AI(Player):
@@ -163,11 +178,11 @@ class User(Player):
 
 class Game:
     def __init__(self):
-        UserBoard = self.random_board()
-        AIBoard = self.random_board()
+        UserBoard = self.try_board()
+        AIBoard = self.try_board()
         self.User = User(UserBoard, AIBoard)
         self.AI = AI(AIBoard, UserBoard)
-        AIBoard.hid = False
+        AIBoard.hid = True
 
     def random_board(self):
         board = Board()
@@ -177,14 +192,20 @@ class Game:
             while True:
                 num += 1
                 if num > 20000:
-                    num = 0
-                    board.povtor()
+                    return None
                 ship = Ship(i, Dot(randint(0, 5), randint(0, 5)), randint(0, 1))
                 try:
                     board.add_ship(ship)
                     break
                 except BoardUsedException:
                     pass
+        board.povtor()
+        return board
+
+    def try_board(self):
+        board = None
+        while board is None:
+            board = self.random_board()
         return board
 
     def great(self):
