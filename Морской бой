@@ -53,6 +53,7 @@ class Board:
         self.ship_types = []
         self.hid = False
         self.counter_list = []
+        self.dead = 0
 
     def __str__(self):
         res = ""
@@ -102,6 +103,7 @@ class Board:
                 if ship.hp == 0:
                     self.countor(ship)
                     print('Корабль уничтожен!')
+                    self.dead += 1
                     return False
                 else:
                     print('Корабль поврежден!')
@@ -165,7 +167,7 @@ class Game:
         AIBoard = self.random_board()
         self.User = User(UserBoard, AIBoard)
         self.AI = AI(AIBoard, UserBoard)
-        AIBoard.hid = True
+        AIBoard.hid = False
 
     def random_board(self):
         board = Board()
@@ -183,7 +185,6 @@ class Game:
                     break
                 except BoardUsedException:
                     pass
-        print(board)
         return board
 
     def great(self):
@@ -197,28 +198,41 @@ class Game:
         print()
 
     def loop(self):
+        num = 0
         while True:
             print('Доска Игрока!')
             print(self.User.board)
             print()
             print('Доска Компьютера')
             print(self.AI.board)
-            num = 1
-            if num % 2:
-                self.User.move()
+
+            if num % 2 == 0:
+                print('Ходит Игрок!')
+                shotik = self.User.move()
             else:
-                self.AI.move()
+                print('Ходит Компьютер!')
+                shotik = self.AI.move()
+            if shotik:
+                num -= 1
 
-            if len(self.User.board.ship_types) == 0:
+            if self.User.board.dead == len(self.AI.board.ship_types):
+                print('Доска Игрока!')
+                print(self.User.board)
+                print()
+                print('Доска Компьютера')
+                print(self.AI.board)
                 print('Победу одержал Компьютер!')
                 break
 
-            if len(self.AI.board.ship_types) == 0:
-                print('Победу одержал Компьютер!')
+            if self.AI.board.dead == len(self.User.board.ship_types):
+                print('Доска Игрока!')
+                print(self.User.board)
+                print()
+                print('Доска Компьютера')
+                print(self.AI.board)
+                print('Победу одержал Игрок!')
                 break
-
             num += 1
-
     def start(self):
         self.great()
         self.loop()
