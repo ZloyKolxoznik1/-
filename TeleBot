@@ -1,0 +1,38 @@
+import telebot
+from extensions import APIException, CryptoConverter
+from TOKEN import TOKEN, keys
+
+
+bot = telebot.TeleBot(TOKEN)
+
+
+@bot.message_handler(commands=['start', 'help'])
+def handle_message_start(message):
+    bot.send_message(message.chat.id, f'<Имя валюты> <Имя валюты, в которой надо узнать цену первой валюты> <Количество первой валюты>.')
+
+
+@bot.message_handler(commands=['values'])
+def handle_message_values(message):
+    text = 'Доступные валюты:'
+    for key in keys.keys():
+        text = '\n'.join((text, key))
+    bot.send_message(message.chat.id, text)
+
+
+@bot.message_handler(content_types=['text'])
+def schet(message: telebot.types.Message):
+    try:
+        values = message.text.split(' ')
+        if len(values) != 3:
+            raise APIException(f'Неверное количество значений')
+        base, quote, amount = values
+
+        result = CryptoConverter.get_price(base, quote, amount)
+    except APIException as e:
+        bot.reply_to(message, f'Ошибка.\n{e}')
+    else:
+        text = f'Цена: {amount} {base}  = {result} {quote}'
+        bot.send_message(message.chat.id, text)
+
+
+bot.polling()
