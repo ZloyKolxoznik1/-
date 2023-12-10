@@ -1,0 +1,31 @@
+import json
+import requests
+from TOKEN import keys
+
+class APIException(Exception):
+    pass
+
+
+class CryptoConverter:
+    @staticmethod
+    def get_price(base: str, quote: str, amount: str):
+        try:
+            amount = float(amount)
+        except ValueError:
+            raise APIException(f'Невозможно посчитать количество {amount}')
+        if base == quote:
+            raise APIException(f'Нельзя перевести одинаковые валюты {base}\n Посмотредь доступные валюты /values')
+        if amount < 0:
+            raise APIException(f'Количество валюты не может быть отрицательным')
+        try:
+            base_tiker = keys[base]
+        except KeyError:
+            raise APIException(f'Нe удалось обработать валюту {base}\n Посмотредь доступные валюты /values')
+        try:
+            quote_tiker = keys[quote]
+        except KeyError:
+            raise APIException(f'Нe удалось обработать валюту {quote}\n Посмотредь доступные валюты /values')
+        r = requests.get(f'https://min-api.cryptocompare.com/data/price?fsym={base_tiker}&tsyms={quote_tiker}')
+        total_base = json.loads(r.content)[keys[quote]]
+        result = total_base * amount
+        return result
